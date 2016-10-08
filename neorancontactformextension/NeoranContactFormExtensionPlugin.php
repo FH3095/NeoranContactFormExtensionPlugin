@@ -40,17 +40,32 @@ class NeoranContactFormExtensionPlugin extends BasePlugin
 		if(!$verified)
 		{
 			$event->isValid = false;
-			$event->params['message']->addError('message', 'Captcha failed!');
+			$errorMessage = 'Missing verification.';
+			if(strcasecmp(craft()->getLanguage(),'de')==0)
+			{
+				$errorMessage = 'Verifizierung fehlt.';
+			}
+			$event->params['message']->addError('captcha', $errorMessage);
 		}
-		// When fromName from message parameters is set, copy it to the fromName field
-		if(isset($event->params['message']->messageFields['fromName']))
+		if(!isset($event->params['message']->messageFields['fromName']) || empty($event->params['message']->messageFields['fromName']))
 		{
+			$event->isValid = false;
+			$event->params['message']->addError('fromName',Craft::t('{attribute} cannot be blank.',array('attribute' => 'Name'),'coreMessages'));
+		}
+		else
+		{
+			// When fromName from message parameters is set, copy it to the fromName field
 			$event->params['message']->fromName = $event->params['message']->messageFields['fromName'];
 		}
 	}
 
 	public static function contactFormBeforeMessageCompile(ContactFormMessageEvent $event)
 	{
+		if(empty($event->params['postedMessage']['body']))
+		{
+			return;
+		}
+
 		$messageFields = $event->messageFields = $event->params['postedMessage'];
 		$message = '';
 
